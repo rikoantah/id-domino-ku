@@ -6,31 +6,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-:root{
-  --bg1:#020617;
-  --bg2:#0f172a;
-  --card:#1f2937;
-  --used:#064e3b;
-  --text:#e5e7eb;
-  --accent:#22c55e;
-}
-
-*{box-sizing:border-box}
-
 body{
   margin:0;
   min-height:100vh;
-  background:linear-gradient(180deg,var(--bg1),var(--bg2));
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
-  color:var(--text);
+  background:linear-gradient(180deg,#020617,#0f172a);
+  font-family:system-ui;
+  color:#e5e7eb;
 }
 
 header{
   text-align:center;
-  padding:18px 10px;
+  padding:18px;
   font-size:22px;
   font-weight:700;
-  letter-spacing:1px;
 }
 
 #list{
@@ -41,24 +29,22 @@ header{
 }
 
 .item{
-  background:var(--card);
+  background:#1f2937;
   padding:18px 8px;
   text-align:center;
   border-radius:16px;
   font-weight:600;
-  position:relative;
   cursor:pointer;
-  transition:0.2s;
-  box-shadow:0 6px 14px rgba(0,0,0,0.35);
+  position:relative;
+  transition:.15s;
 }
 
 .item:active{
-  transform:scale(0.96);
-  box-shadow:0 0 18px rgba(34,197,94,0.6);
+  transform:scale(.96);
 }
 
 .item.used{
-  background:var(--used);
+  background:#064e3b;
   color:#bbf7d0;
 }
 
@@ -68,7 +54,7 @@ header{
   top:6px;
   right:10px;
   font-size:14px;
-  color:var(--accent);
+  color:#22c55e;
 }
 </style>
 </head>
@@ -79,51 +65,43 @@ header{
 <div id="list"></div>
 
 <script>
-/* =========================
-   KONFIGURASI
-========================= */
-const SHEET_ID = "1-H7Mr24YJwgBBNq93djB_lCHMzH9I7t1uS8U4DCGPmI";
-const SHEET_NAME = "Data";
+/* =====================
+   KONFIG
+===================== */
+const CSV_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vTRXU-DQApb_fHnXcXOAIz7ZyQtEpB7G2TXSpee_XqX5zIbj4URA8ckDV4jG49aHT9EJsB1sfNHAgqW/pub?output=csv";
+
 const STORAGE_KEY = "id_ku_used";
 const RESET_KEY = "id_ku_reset";
 
-/* =========================
-   RESET JAM 00:00
-========================= */
+/* =====================
+   RESET 00:00
+===================== */
 function today(){
   return new Date().toISOString().slice(0,10);
 }
 
-function resetIfNeeded(){
-  const last = localStorage.getItem(RESET_KEY);
-  if(last !== today()){
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.setItem(RESET_KEY, today());
-  }
+if(localStorage.getItem(RESET_KEY) !== today()){
+  localStorage.setItem(RESET_KEY, today());
+  localStorage.removeItem(STORAGE_KEY);
 }
-resetIfNeeded();
 
-/* =========================
-   LOAD STATUS
-========================= */
 let used = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
-/* =========================
-   AMBIL DATA DARI SHEET
-========================= */
-const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&tq=select%20B`;
-
-fetch(url)
-.then(res => res.text())
-.then(text => {
-  const json = JSON.parse(text.substring(47).slice(0, -2));
-  const rows = json.table.rows;
+/* =====================
+   LOAD CSV
+===================== */
+fetch(CSV_URL)
+.then(r => r.text())
+.then(csv => {
+  const rows = csv.split("\n").slice(1); // skip header
   const list = document.getElementById("list");
 
-  rows.forEach(r => {
-    if(!r.c || !r.c[0] || !r.c[0].v) return;
+  rows.forEach(row => {
+    const cols = row.split(",");
+    if(!cols[1]) return; // kolom B
 
-    const id = r.c[0].v.toString().trim();
+    const id = cols[1].trim();
     if(!id) return;
 
     const div = document.createElement("div");
@@ -142,9 +120,9 @@ fetch(url)
     list.appendChild(div);
   });
 })
-.catch(err=>{
+.catch(()=>{
   document.getElementById("list").innerHTML =
-    "<div style='opacity:.6;text-align:center'>Data tidak dapat dimuat</div>";
+    "<div style='text-align:center;opacity:.6'>Gagal memuat data</div>";
 });
 </script>
 
