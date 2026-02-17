@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>ID KU'</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#0f172a;
+  --card:#111827;
+  --item:#1f2933;
+  --used:#064e3b;
+  --text:#e5e7eb;
+  --accent:#22c55e;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  color:var(--text);
+}
+
+header{
+  text-align:center;
+  padding:16px;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+#list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:12px;
+  padding:12px;
+}
+
+.item{
+  background:var(--item);
+  padding:18px 10px;
+  text-align:center;
+  border-radius:14px;
+  font-weight:600;
+  position:relative;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.item:active{
+  transform:scale(0.97);
+}
+
+.item.used{
+  background:var(--used);
+  color:#bbf7d0;
+}
+
+.item.used::after{
+  content:"✓";
+  position:absolute;
+  top:6px;
+  right:10px;
+  font-size:14px;
+  color:var(--accent);
+}
+</style>
+</head>
+
+<body>
+
+<header>ID KU'</header>
+<div id="list"></div>
+
+<script>
+const SHEET_ID = "1-H7Mr24YJwgBBNq93djB_lCHMzH9I7t1uS8U4DCGPmI";
+const SHEET_NAME = "Data";
+const STORAGE_KEY = "used_ids";
+const RESET_KEY = "reset_date";
+
+function today(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function resetIfNeeded(){
+  const last = localStorage.getItem(RESET_KEY);
+  if(last !== today()){
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(RESET_KEY, today());
+  }
+}
+
+resetIfNeeded();
+
+let used = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${SHEET_NAME}&tq=select%20B`)
+.then(r=>r.text())
+.then(t=>{
+  const json = JSON.parse(t.substring(47).slice(0,-2));
+  const rows = json.table.rows;
+  const list = document.getElementById("list");
+
+  rows.forEach(r=>{
+    if(!r.c[0]) return;
+    const id = r.c[0].v;
+
+    const div = document.createElement("div");
+    div.className = "item" + (used.includes(id) ? " used" : "");
+    div.textContent = id;
+
+    div.onclick = ()=>{
+      navigator.clipboard.writeText(id);
+      if(!used.includes(id)){
+        used.push(id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(used));
+        div.classList.add("used");
+      }
+    };
+
+    list.appendChild(div);
+  });
+});
+</script>
+
+</body>
+</html>
